@@ -52,9 +52,10 @@ export default function ReceiptsPage() {
 
   const handlePrint = (receipt: any) => {
     const payment = receipt.paymentId;
-    const targetMemberId = (typeof payment?.paidForId === 'object' ? payment?.paidForId?._id : payment?.paidForId) || 
-                           (typeof payment?.paidById === 'object' ? payment?.paidById?._id : payment?.paidById);
-    const memberName = members.find((m: any) => m._id === targetMemberId)?.name || 'Member';
+    const memberName = payment?.paidForId?.name || 
+                       payment?.paidById?.name || 
+                       members.find((m: any) => m._id === (payment?.paidForId || payment?.paidById))?.name || 
+                       'Member';
     const amount = formatCurrency(payment?.amount || 0);
     const date = formatDate(receipt.createdAt);
     
