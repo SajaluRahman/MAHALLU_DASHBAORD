@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
-    "@mahallu/shared-config": "*",
-    "@mahallu/shared-types": "*",
+    "@mahallu/shared-config": "file:./packages/shared-config",
+    "@mahallu/shared-types": "file:./packages/shared-types",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.1",
