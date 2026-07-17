@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Printer, Plus, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { FileText, Download, Printer, Plus, X, Loader2, CheckCircle2, Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
@@ -15,6 +15,7 @@ export default function ReceiptsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReceiptForView, setSelectedReceiptForView] = useState<any>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['receipts'],
@@ -180,12 +181,20 @@ export default function ReceiptsPage() {
                         </span>
                       </td>
                       <td className="pr-6 text-right">
-                        <button 
-                          onClick={() => handlePrint(receipt)}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
-                        >
-                          <Printer size={14} /> {t('receipts_page.print')}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => setSelectedReceiptForView(receipt)}
+                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
+                          >
+                            <Eye size={14} /> View
+                          </button>
+                          <button 
+                            onClick={() => handlePrint(receipt)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
+                          >
+                            <Printer size={14} /> {t('receipts_page.print')}
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))
@@ -299,6 +308,100 @@ export default function ReceiptsPage() {
                 <button onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-xl border font-bold text-sm">Cancel</button>
                 <button type="submit" form="receipt-form" disabled={addMutation.isPending} className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm flex justify-center items-center">
                   {addMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Generate Receipt'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {/* View Receipt Modal */}
+        {selectedReceiptForView && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-lg bg-card rounded-2xl border shadow-xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-bold text-foreground">Receipt Details</h2>
+                <button
+                  onClick={() => setSelectedReceiptForView(null)}
+                  className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Receipt Number</p>
+                    <p className="text-lg font-mono font-bold text-foreground">{selectedReceiptForView.receiptNo}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Date</p>
+                    <p className="text-sm font-semibold text-foreground">{formatDate(selectedReceiptForView.createdAt)}</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-muted-foreground">Received From:</span>
+                    <span className="font-bold text-foreground">
+                      {selectedReceiptForView.paymentId?.paidForId?.name || 
+                       selectedReceiptForView.paymentId?.paidById?.name || 
+                       members.find((m: any) => m._id === (selectedReceiptForView.paymentId?.paidForId || selectedReceiptForView.paymentId?.paidById))?.name || 
+                       'Member'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-muted-foreground">Payment Type:</span>
+                    <span className="font-bold text-foreground capitalize">
+                      {selectedReceiptForView.paymentId?.type?.replace('_', ' ') || 'General Payment'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-muted-foreground">Payment Method:</span>
+                    <span className="font-bold text-foreground capitalize">
+                      {selectedReceiptForView.paymentId?.gateway || 'Cash'}
+                    </span>
+                  </div>
+                  {selectedReceiptForView.paymentId?.description && (
+                    <div className="flex justify-between text-sm">
+                      <span className="font-semibold text-muted-foreground">Description:</span>
+                      <span className="font-medium text-foreground max-w-[250px] text-right">
+                        {selectedReceiptForView.paymentId.description}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-4 text-center">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 mb-1">Amount Paid</p>
+                  <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(selectedReceiptForView.paymentId?.amount || 0)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end gap-3 p-6 border-t bg-muted/50">
+                <button
+                  onClick={() => setSelectedReceiptForView(null)}
+                  className="btn-secondary"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    handlePrint(selectedReceiptForView);
+                    setSelectedReceiptForView(null);
+                  }}
+                  className="btn-brand flex items-center gap-2"
+                >
+                  <Printer size={16} /> Print Receipt
                 </button>
               </div>
             </motion.div>
