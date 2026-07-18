@@ -11,8 +11,8 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 export default function NoticesPage() {
   const { t } = useTranslation();
   const { data, isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => apiClient.get('/notifications').then(r => r.data),
+    queryKey: ['notices'],
+    queryFn: () => apiClient.get('/notices').then(r => r.data),
   });
 
   const notices = data?.data || [];
