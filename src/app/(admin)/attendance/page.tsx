@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Calendar, Search, CheckCircle, XCircle, Clock, CheckSquare } from 'lucide-react';
@@ -11,18 +11,25 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 export default function AttendancePage() {
   const { t } = useTranslation();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [classId, setClassId] = useState('6a4e586a91e5d5122d851d67'); // Default placeholder or fetched classId
+  const [classId, setClassId] = useState('');
 
   const { data: classes } = useQuery({
     queryKey: ['madrasa'],
     queryFn: () => apiClient.get('/madrasa').then(r => r.data.data),
   });
 
+  useEffect(() => {
+    if (classes && classes.length > 0 && !classId) {
+      setClassId(classes[0]._id);
+    }
+  }, [classes, classId]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['attendance', classId, date],
     queryFn: () => apiClient.get(`/attendance/class/${classId}`, {
       params: { date },
     }).then(r => r.data),
+    enabled: !!classId,
   });
 
   const records = data?.data || [];
@@ -79,9 +86,15 @@ export default function AttendancePage() {
             onChange={e => setClassId(e.target.value)}
             className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="6a4e586a91e5d5122d851d67">Class 1</option>
-            <option value="6a4e586a91e5d5122d851d68">Class 2</option>
-            <option value="6a4e586a91e5d5122d851d69">Class 3</option>
+            {classes && classes.length > 0 ? (
+              classes.map((c: any) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))
+            ) : (
+              <option value="">No classes found</option>
+            )}
           </select>
         </div>
       </div>
