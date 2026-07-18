@@ -14,8 +14,37 @@ export default function ReportsPage() {
     queryFn: () => apiClient.get('/reports/financial').then(r => r.data.data),
   });
 
-  const exportReport = (type: string) => {
-    toast.success(`${type} report export initiated. The file will download shortly.`);
+  const exportReport = async (type: string) => {
+    const loadingToast = toast.loading(`Exporting ${type} report...`);
+    try {
+      let endpoint = '';
+      if (type === 'Financial') endpoint = '/reports/export/financial';
+      else if (type === 'Member') endpoint = '/reports/export/members';
+      else if (type === 'Academic') endpoint = '/reports/export/academic';
+      else {
+        toast.dismiss(loadingToast);
+        toast.error('Unknown report type');
+        return;
+      }
+
+      const response = await apiClient.get(endpoint, { responseType: 'blob' });
+      
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${type.toLowerCase()}_report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingToast);
+      toast.success(`${type} report exported successfully.`);
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      toast.error(err.response?.data?.message || `Failed to export ${type} report.`);
+    }
   };
 
   return (
