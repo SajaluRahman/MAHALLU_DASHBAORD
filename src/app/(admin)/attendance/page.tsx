@@ -14,8 +14,8 @@ export default function AttendancePage() {
   const [classId, setClassId] = useState('');
 
   const { data: classes } = useQuery({
-    queryKey: ['madrasa'],
-    queryFn: () => apiClient.get('/madrasa').then(r => r.data.data),
+    queryKey: ['classes'],
+    queryFn: () => apiClient.get('/classes').then(r => r.data.data),
   });
 
   useEffect(() => {
