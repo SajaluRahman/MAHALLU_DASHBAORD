@@ -21,6 +21,8 @@ export default function ReportsPage() {
       if (type === 'Financial') endpoint = '/reports/export/financial';
       else if (type === 'Member') endpoint = '/reports/export/members';
       else if (type === 'Academic') endpoint = '/reports/export/academic';
+      else if (type === 'IncomeExpense') endpoint = '/reports/export/income-expense';
+      else if (type === 'Payments') endpoint = '/reports/export/payments';
       else {
         toast.dismiss(loadingToast);
         toast.error('Unknown report type');
@@ -60,9 +62,11 @@ export default function ReportsPage() {
       {/* Reports Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { title: t('reports.financialStatement'), desc: t('reports.financialDesc'), icon: DollarSign, color: '#059669', type: 'Financial' },
-          { title: t('reports.memberCensus'), desc: t('reports.memberDesc'), icon: Users, color: '#3b82f6', type: 'Member' },
-          { title: t('reports.academicProgress'), desc: t('reports.academicDesc'), icon: GraduationCap, color: '#8b5cf6', type: 'Academic' },
+          { title: t('reports.financialStatement') || 'Financial Statement', desc: t('reports.financialDesc') || 'Overview of Mahallu funds and transactions', icon: DollarSign, color: '#059669', type: 'Financial' },
+          { title: t('reports.memberCensus') || 'Member Census Report', desc: t('reports.memberDesc') || 'Census of Mahallu families and members', icon: Users, color: '#3b82f6', type: 'Member' },
+          { title: t('reports.academicProgress') || 'Academic Progress', desc: t('reports.academicDesc') || 'Student enrollments and Madrasa logs', icon: GraduationCap, color: '#8b5cf6', type: 'Academic' },
+          { title: 'Income & Expense Report', desc: 'Categorized list of incomes and expenses', icon: BarChart3, color: '#f59e0b', type: 'IncomeExpense' },
+          { title: 'Payment History', desc: 'Complete history of payments and dues collection', icon: FileText, color: '#ec4899', type: 'Payments' },
         ].map((rep, i) => (
           <motion.div
             key={rep.title}
