@@ -24,7 +24,7 @@ export default function AttendancePage() {
     }
   }, [classes, classId]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['attendance', classId, date],
     queryFn: () => apiClient.get(`/attendance/class/${classId}`, {
       params: { date },
@@ -32,10 +32,54 @@ export default function AttendancePage() {
     enabled: !!classId,
   });
 
-  const records = data?.data || [];
+  const [localRecords, setLocalRecords] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const presentCount = records.filter((r: any) => r.status === 'present').length;
-  const absentCount = records.filter((r: any) => r.status === 'absent').length;
+  useEffect(() => {
+    if (data?.data) {
+      setLocalRecords(data.data);
+    } else {
+      setLocalRecords([]);
+    }
+  }, [data]);
+
+  const presentCount = localRecords.filter((r: any) => r.status === 'present').length;
+  const absentCount = localRecords.filter((r: any) => r.status === 'absent').length;
+
+  const toggleStatus = (studentId: string) => {
+    setLocalRecords(prev => prev.map(r => {
+      if (r.entityId?._id === studentId) {
+        return { ...r, status: r.status === 'present' ? 'absent' : 'present' };
+      }
+      return r;
+    }));
+  };
+
+  const saveAttendance = async () => {
+    if (localRecords.length === 0) return;
+    setIsSaving(true);
+    const loadingToast = toast.loading('Saving attendance...');
+    try {
+      const payload = {
+        classId,
+        date,
+        entityType: 'student',
+        records: localRecords.map(r => ({
+          entityId: r.entityId?._id,
+          status: r.status
+        }))
+      };
+      await apiClient.post('/attendance/bulk', payload);
+      toast.dismiss(loadingToast);
+      toast.success('Attendance saved successfully!');
+      refetch();
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      toast.error(err.response?.data?.message || 'Failed to save attendance.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -52,7 +96,7 @@ export default function AttendancePage() {
         {[
           { label: t('attendance_page.present'), value: presentCount, icon: CheckCircle, color: '#059669' },
           { label: t('attendance_page.absent'), value: absentCount, icon: XCircle, color: '#f43f5e' },
-          { label: t('attendance_page.total'), value: records.length, icon: Calendar, color: '#3b82f6' },
+          { label: t('attendance_page.total'), value: localRecords.length, icon: Calendar, color: '#3b82f6' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -74,28 +118,39 @@ export default function AttendancePage() {
 
       {/* Filters */}
       <div className="section-card">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <select
-            value={classId}
-            onChange={e => setClassId(e.target.value)}
-            className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            {classes && classes.length > 0 ? (
-              classes.map((c: any) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))
-            ) : (
-              <option value="">No classes found</option>
-            )}
-          </select>
+        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <div className="flex gap-3 w-full sm:w-auto">
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <select
+              value={classId}
+              onChange={e => setClassId(e.target.value)}
+              className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              {classes && classes.length > 0 ? (
+                classes.map((c: any) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))
+              ) : (
+                <option value="">No classes found</option>
+              )}
+            </select>
+          </div>
+          {localRecords.length > 0 && (
+            <button
+              onClick={saveAttendance}
+              disabled={isSaving}
+              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white font-bold text-sm rounded-xl transition duration-200"
+            >
+              {isSaving ? 'Saving...' : 'Save Attendance'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -117,7 +172,7 @@ export default function AttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {records.length === 0 ? (
+                {localRecords.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="text-center py-12 text-muted-foreground">
                       <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
@@ -125,9 +180,9 @@ export default function AttendancePage() {
                     </td>
                   </tr>
                 ) : (
-                  records.map((record: any, i: number) => (
+                  localRecords.map((record: any, i: number) => (
                     <motion.tr
-                      key={record._id}
+                      key={record.entityId?._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.02 }}
@@ -144,11 +199,14 @@ export default function AttendancePage() {
                         {formatDate(record.date)}
                       </td>
                       <td>
-                        <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold capitalize',
-                          record.status === 'present' ? 'badge-active' : 'badge-overdue'
-                        )}>
+                        <button
+                          onClick={() => toggleStatus(record.entityId?._id)}
+                          className={cn('text-xs px-2.5 py-1 rounded-full font-semibold capitalize transition duration-200',
+                            record.status === 'present' ? 'badge-active hover:bg-emerald-200/40' : 'badge-overdue hover:bg-red-200/40'
+                          )}
+                        >
                           {record.status}
-                        </span>
+                        </button>
                       </td>
                     </motion.tr>
                   ))
