@@ -1,6 +1,7 @@
 'use client';
+
 import { useForm, Controller } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -10,23 +11,35 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export default function NewClassPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
+  const backUrl = isMadrasaPortal ? '/madrasa-portal/classes' : '/madrasa/classes';
+
   const { register, handleSubmit, control } = useForm();
   
-  const { data: teachers } = useQuery({ 
+  const { data: teachersData } = useQuery({ 
     queryKey: ['teachers'], 
-    queryFn: () => apiClient.get('/teachers').then(r => r.data.data || []) 
+    queryFn: () => apiClient.get('/teachers').then(r => r.data) 
   });
   
-  const { data: students } = useQuery({ 
+  const { data: studentsData } = useQuery({ 
     queryKey: ['students'], 
-    queryFn: () => apiClient.get('/students').then(r => r.data.data || []) 
+    queryFn: () => apiClient.get('/students').then(r => r.data) 
   });
+
+  const teachersList = Array.isArray(teachersData?.data) 
+    ? teachersData.data 
+    : (Array.isArray(teachersData) ? teachersData : []);
+
+  const studentsList = Array.isArray(studentsData?.data) 
+    ? studentsData.data 
+    : (Array.isArray(studentsData) ? studentsData : []);
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post('/classes', data),
     onSuccess: () => {
       toast.success('Class created successfully!');
-      router.push('/madrasa');
+      router.push(backUrl);
     },
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to create class')
   });
@@ -34,7 +47,7 @@ export default function NewClassPage() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3">
-        <Link href="/madrasa"><button className="p-2 rounded-xl border"><ArrowLeft size={16} /></button></Link>
+        <Link href={backUrl}><button className="p-2 rounded-xl border"><ArrowLeft size={16} /></button></Link>
         <div>
           <h1 className="page-title text-xl">Add New Class</h1>
           <p className="page-subtitle font-medium">Create a class and assign an Ustadh</p>
@@ -68,7 +81,10 @@ export default function NewClassPage() {
                 name="teacherId"
                 render={({ field }) => (
                   <SearchableSelect
-                    options={teachers?.map((t: any) => ({ value: t._id, label: `${t.memberId?.name} (${t.employeeId})` })) || []}
+                    options={teachersList.map((t: any) => ({ 
+                      value: t._id, 
+                      label: `${t.memberId?.name || 'Ustadh'} (${t.employeeId || 'Staff'})` 
+                    }))}
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="No Teacher Assigned"
@@ -78,9 +94,9 @@ export default function NewClassPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1.5">Assign Students (Hold Ctrl/Cmd to select multiple)</label>
+              <label className="block text-sm font-medium mb-1.5 font-semibold">Assign Students (Hold Ctrl/Cmd to select multiple)</label>
               <select multiple {...register('students')} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm min-h-[150px]">
-                {students?.map((s: any) => (
+                {studentsList.map((s: any) => (
                   <option key={s._id} value={s._id}>
                     {s.memberId?.name || 'Unknown'} - {s.admissionNo}
                   </option>
@@ -95,7 +111,7 @@ export default function NewClassPage() {
           </div>
           
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Link href="/madrasa"><button type="button" className="px-5 py-2.5 rounded-xl border text-sm font-semibold">Cancel</button></Link>
+            <Link href={backUrl}><button type="button" className="px-5 py-2.5 rounded-xl border text-sm font-semibold">Cancel</button></Link>
             <button type="submit" disabled={createMutation.isPending} className="btn-brand flex items-center gap-2">
               {createMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Class
             </button>
