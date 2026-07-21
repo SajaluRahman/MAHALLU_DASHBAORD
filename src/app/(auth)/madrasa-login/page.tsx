@@ -45,9 +45,9 @@ export default function MadrasaLoginPage() {
     }
   };
 
-  const fillDemoRole = (email: string) => {
+  const fillDemoRole = (email: string, pass: string) => {
     setValue('identifier', email);
-    setValue('password', 'Admin@123456');
+    setValue('password', pass);
     setValue('tenantCode', 'JMM001');
   };
 
@@ -186,17 +186,17 @@ export default function MadrasaLoginPage() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => fillDemoRole('sadar@mahallu.app')}
+                onClick={() => fillDemoRole('madrasa.admin@mahallu.app', 'Madrasa@123456')}
                 className="py-2 px-2.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/20 font-medium text-center truncate transition-colors"
               >
-                👳‍♂️ Sadar Mualim
+                🏫 Madrasa Admin ID
               </button>
               <button
                 type="button"
-                onClick={() => fillDemoRole('admin@mahallu.app')}
+                onClick={() => fillDemoRole('sadar@mahallu.app', 'Sadar@123456')}
                 className="py-2 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 font-medium text-center truncate transition-colors"
               >
-                🏫 Principal
+                👳‍♂️ Sadar Mualim ID
               </button>
             </div>
           </div>
