@@ -52,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { id: 'properties', label: 'Properties', href: '/properties', icon: Building2 },
+  { id: 'certificates', label: 'Certificates', href: '/certificates', icon: FileText },
   { id: 'zakat', label: 'Zakat', href: '/zakat', icon: Zap },
   { id: 'nikah', label: 'Nikah', href: '/nikah', icon: Heart },
   { id: 'death', label: 'Death & Burial', href: '/death', icon: Skull },
