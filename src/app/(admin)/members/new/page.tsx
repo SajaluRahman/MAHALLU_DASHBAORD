@@ -177,12 +177,24 @@ export default function NewMemberPage() {
             {/* Relationship with head */}
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">Relationship to Head</label>
-              <input
-                type="text"
+              <select
                 {...register('relationship')}
-                placeholder="e.g. Self, Wife, Son, Daughter"
                 className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+              >
+                <option value="">Select Relationship</option>
+                <option value="Head">Head</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Son">Son (Child)</option>
+                <option value="Daughter">Daughter (Child)</option>
+                <option value="Child">Child / Dependent</option>
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Brother">Brother</option>
+                <option value="Sister">Sister</option>
+                <option value="Grandson">Grandson</option>
+                <option value="Granddaughter">Granddaughter</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             {/* Status */}
