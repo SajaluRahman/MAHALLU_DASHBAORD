@@ -7,8 +7,12 @@ import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 
+import { usePathname } from 'next/navigation';
+
 export default function ClassesPage() {
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
   
   const { data: classes, isLoading } = useQuery({
     queryKey: ['madrasa-classes'],
@@ -36,7 +40,7 @@ export default function ClassesPage() {
           <h1 className="page-title">{t('madrasa.classes') || 'Classes'}</h1>
           <p className="page-subtitle">{'Manage madrasa classes, timetables, and assignments'}</p>
         </div>
-        <Link href="/madrasa/classes/new">
+        <Link href={isMadrasaPortal ? '/madrasa-portal/classes/new' : '/madrasa/classes/new'}>
           <button className="btn-primary">
             <Plus size={18} />
             {'Add Class'}
@@ -78,7 +82,7 @@ export default function ClassesPage() {
               </div>
             </div>
 
-            <Link href={`/madrasa/classes/${cls._id}`}>
+            <Link href={isMadrasaPortal ? `/madrasa-portal/classes/${cls._id}` : `/madrasa/classes/${cls._id}`}>
               <div className="absolute bottom-4 right-4 w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <ArrowRight size={16} />
               </div>

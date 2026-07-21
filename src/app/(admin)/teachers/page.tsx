@@ -4,12 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Plus, Download, UserCheck, DollarSign, BookOpen, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 
 export default function TeachersPage() {
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
+
   const { data, isLoading } = useQuery({
     queryKey: ['teachers'],
     queryFn: () => apiClient.get('/teachers').then(r => r.data),
@@ -33,7 +37,7 @@ export default function TeachersPage() {
             <Download size={16} />
             {t('teachers_page.export')}
           </button>
-          <Link href="/teachers/new">
+          <Link href={isMadrasaPortal ? '/madrasa-portal/teachers/new' : '/teachers/new'}>
             <button id="add-teacher-btn" className="btn-brand flex items-center gap-2">
               <Plus size={16} />
               {t('teachers_page.addUsthadh')}
@@ -130,7 +134,7 @@ export default function TeachersPage() {
                       </td>
                       <td className="pr-6">
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/teachers/${teacher._id}`}>
+                          <Link href={isMadrasaPortal ? `/madrasa-portal/teachers/${teacher._id}` : `/teachers/${teacher._id}`}>
                             <button className="p-1.5 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 transition-colors">
                               <Eye size={15} />
                             </button>

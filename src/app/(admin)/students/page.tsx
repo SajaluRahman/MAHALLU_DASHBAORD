@@ -5,12 +5,16 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Plus, Search, Download, GraduationCap, DollarSign, Clock, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 
 export default function StudentsPage() {
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [classId, setClassId] = useState('');
@@ -42,7 +46,7 @@ export default function StudentsPage() {
             <Download size={16} />
             Export
           </button>
-          <Link href="/students/new">
+          <Link href={isMadrasaPortal ? '/madrasa-portal/students/new' : '/students/new'}>
             <button id="add-student-btn" className="btn-brand flex items-center gap-2">
               <Plus size={16} />
               New Admission
@@ -176,7 +180,7 @@ export default function StudentsPage() {
                       </td>
                       <td className="pr-6">
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/students/${student._id}`}>
+                          <Link href={isMadrasaPortal ? `/madrasa-portal/students/${student._id}` : `/students/${student._id}`}>
                             <button className="p-1.5 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 transition-colors">
                               <Eye size={15} />
                             </button>
