@@ -29,8 +29,14 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { id: 'inbox', label: 'Inbox', href: '/inbox', icon: Inbox },
   { id: 'registrations', label: 'Registrations', href: '/registrations', icon: UserPlus },
-  { id: 'members', label: 'Members', href: '/members', icon: Users },
-  { id: 'families', label: 'Families', href: '/families', icon: Home },
+  {
+    id: 'family_members', label: 'Family & Members', icon: Users,
+    children: [
+      { id: 'families', label: 'Families', href: '/families', icon: Home },
+      { id: 'members', label: 'Members', href: '/members', icon: Users },
+      { id: 'import_export', label: 'Import & Export', href: '/members/import-export', icon: FileText },
+    ],
+  },
   { id: 'mosque', label: 'Mosque', href: '/mosque', icon: Building2 },
   {
     id: 'madrasa', label: 'Madrasa', icon: GraduationCap,
@@ -136,7 +142,10 @@ export function Sidebar() {
     return item.badge;
   };
 
-  const getLabel = (item: NavItem) => t(`sidebar.${item.id}`);
+  const getLabel = (item: NavItem) => {
+    const translated = t(`sidebar.${item.id}`);
+    return translated && translated !== `sidebar.${item.id}` ? translated : item.label;
+  };
 
   const toggleExpand = (label: string) => {
     setExpandedItems(prev =>
