@@ -57,13 +57,13 @@ export default function MadrasaPortalDashboard() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/attendance"
+            href="/madrasa-portal/attendance"
             className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-sm transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/20"
           >
             <Calendar size={16} /> Mark Today's Attendance
           </Link>
           <Link
-            href="/students/new"
+            href="/madrasa-portal/students"
             className="px-4 py-2.5 rounded-xl bg-muted/60 hover:bg-muted text-foreground font-medium text-sm transition-colors border border-border flex items-center gap-2"
           >
             <Plus size={16} /> Add Student
@@ -150,7 +150,7 @@ export default function MadrasaPortalDashboard() {
         <h2 className="text-lg font-bold text-foreground">Madrasa Portal Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
-            href="/attendance"
+            href="/madrasa-portal/attendance"
             className="p-4 rounded-2xl bg-card border border-border hover:border-teal-500/50 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function MadrasaPortalDashboard() {
           </Link>
 
           <Link
-            href="/madrasa/classes"
+            href="/madrasa-portal/classes"
             className="p-4 rounded-2xl bg-card border border-border hover:border-blue-500/50 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ export default function MadrasaPortalDashboard() {
           </Link>
 
           <Link
-            href="/students"
+            href="/madrasa-portal/students"
             className="p-4 rounded-2xl bg-card border border-border hover:border-emerald-500/50 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export default function MadrasaPortalDashboard() {
           </Link>
 
           <Link
-            href="/certificates"
+            href="/madrasa-portal/certificates"
             className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/50 transition-all flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
