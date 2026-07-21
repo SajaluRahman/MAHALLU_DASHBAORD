@@ -39,16 +39,6 @@ const NAV_ITEMS: NavItem[] = [
   },
   { id: 'mosque', label: 'Mosque', href: '/mosque', icon: Building2 },
   {
-    id: 'madrasa', label: 'Madrasa', icon: GraduationCap,
-    children: [
-      { id: 'overview', label: 'Overview', href: '/madrasa', icon: GraduationCap },
-      { id: 'classes', label: 'Classes', href: '/madrasa/classes', icon: BookOpen },
-      { id: 'students', label: 'Students', href: '/students', icon: Users },
-      { id: 'teachers', label: 'Teachers', href: '/teachers', icon: UserCheck },
-      { id: 'attendance', label: 'Attendance', href: '/attendance', icon: Calendar },
-    ],
-  },
-  {
     id: 'finance', label: 'Finance', icon: DollarSign,
     children: [
       { id: 'overview', label: 'Overview', href: '/finance', icon: DollarSign },
