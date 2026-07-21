@@ -17,7 +17,6 @@ const MADRASA_NAV_ITEMS = [
   { id: 'students', label: 'Students & Admissions', href: '/madrasa-portal/students', icon: Users },
   { id: 'teachers', label: 'Ustadhs & Staff', href: '/madrasa-portal/teachers', icon: UserCheck },
   { id: 'attendance', label: 'Daily Attendance', href: '/madrasa-portal/attendance', icon: Calendar },
-  { id: 'certificates', label: 'Certificates & Cards', href: '/madrasa-portal/certificates', icon: FileText },
 ];
 
 export default function MadrasaPortalLayout({ children }: { children: React.ReactNode }) {

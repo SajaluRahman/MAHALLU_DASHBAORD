@@ -148,7 +148,7 @@ export default function MadrasaPortalDashboard() {
       {/* Quick Action Navigation Grid */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-foreground">Madrasa Portal Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href="/madrasa-portal/attendance"
             className="p-4 rounded-2xl bg-card border border-border hover:border-teal-500/50 transition-all flex items-center justify-between group"
@@ -195,22 +195,6 @@ export default function MadrasaPortalDashboard() {
               </div>
             </div>
             <ArrowUpRight size={18} className="text-muted-foreground group-hover:text-emerald-400 transition-colors" />
-          </Link>
-
-          <Link
-            href="/madrasa-portal/certificates"
-            className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/50 transition-all flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-                <FileText size={20} />
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-foreground">Student Certificates</p>
-                <p className="text-xs text-muted-foreground">Issue & verify cards</p>
-              </div>
-            </div>
-            <ArrowUpRight size={18} className="text-muted-foreground group-hover:text-purple-400 transition-colors" />
           </Link>
         </div>
       </div>
