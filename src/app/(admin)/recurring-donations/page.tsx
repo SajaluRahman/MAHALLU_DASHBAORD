@@ -3,25 +3,38 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Search, DollarSign, Bell, Loader2, X } from 'lucide-react';
+import { Calendar, Search, DollarSign, Bell, Loader2, X, Edit3, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n/useTranslation';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 export default function RecurringDonationsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('all'); // 'all', 'paid', 'unpaid'
+  const [paymentStatus, setPaymentStatus] = useState('all'); // 'all', 'paid', 'unpaid', 'overdue'
   const [search, setSearch] = useState('');
 
-  // Payment Modal States
+  // Collect Payment Modal States
   const [selectedFamily, setSelectedFamily] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentGateway, setPaymentGateway] = useState('cash');
   const [paymentDescription, setPaymentDescription] = useState('');
+
+  // Configure Schedule Modal States
+  const [editScheduleFamily, setEditScheduleFamily] = useState<any>(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleType, setScheduleType] = useState<'monthly' | 'yearly' | 'none'>('monthly');
+  const [scheduleAmount, setScheduleAmount] = useState('');
+  const [scheduleDay, setScheduleDay] = useState(1);
+  const [scheduleMonth, setScheduleMonth] = useState(1);
 
   const { data: familiesData, isLoading } = useQuery({
     queryKey: ['families', search],
@@ -34,6 +47,17 @@ export default function RecurringDonationsPage() {
     mutationFn: (familyId: string) => apiClient.post(`/families/${familyId}/remind-recurring`),
     onSuccess: (data) => toast.success(data?.data?.message || 'Reminder sent successfully'),
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to send reminder'),
+  });
+
+  const updateScheduleMutation = useMutation({
+    mutationFn: (data: any) => apiClient.put(`/families/${editScheduleFamily._id}`, data),
+    onSuccess: () => {
+      toast.success('Recurring donation schedule updated successfully');
+      setIsScheduleModalOpen(false);
+      setEditScheduleFamily(null);
+      queryClient.invalidateQueries({ queryKey: ['families'] });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to update schedule'),
   });
 
   const collectMutation = useMutation({
@@ -53,17 +77,32 @@ export default function RecurringDonationsPage() {
 
   const families = familiesData || [];
 
+  // Helper to calculate due status
+  const getDueStatus = (nextDueDateStr?: string) => {
+    if (!nextDueDateStr) return { status: 'NORMAL', label: 'Upcoming', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' };
+    const dueDate = new Date(nextDueDateStr);
+    const today = new Date();
+    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+
+    if (diffDays < 0) {
+      return { status: 'OVERDUE', label: `Overdue (${Math.abs(diffDays)}d)`, badge: 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' };
+    }
+    if (diffDays <= 7) {
+      return { status: 'DUE_SOON', label: `Due in ${diffDays}d`, badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' };
+    }
+    return { status: 'NORMAL', label: 'Upcoming', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' };
+  };
+
   // Filter based on recurringDonationType and paymentStatus
   const filteredFamilies = families.filter((f: any) => {
-    // 1. Must be a recurring donation family
     if (!f.recurringDonationType || f.recurringDonationType === 'none') return false;
-    
-    // 2. Frequency filter
     if (filterType && f.recurringDonationType !== filterType) return false;
 
-    // 3. Payment status filter
+    const dueInfo = getDueStatus(f.nextPaymentDueDate);
+
     if (paymentStatus === 'paid') return (f.outstandingBalance || 0) <= 0;
     if (paymentStatus === 'unpaid') return (f.outstandingBalance || 0) > 0;
+    if (paymentStatus === 'overdue') return dueInfo.status === 'OVERDUE';
     
     return true;
   });
@@ -82,12 +121,20 @@ export default function RecurringDonationsPage() {
     .reduce((sum: number, f: any) => sum + (Math.max(0, f.outstandingBalance || 0)), 0);
 
   const triggerAlert = (familyId: string, familyName: string, amount: number) => {
-    if (amount <= 0) return toast.info(`${familyName} has no outstanding balance to pay.`);
     remindMutation.mutate(familyId);
   };
 
+  const openScheduleModal = (family: any) => {
+    setEditScheduleFamily(family);
+    setScheduleType(family.recurringDonationType || 'monthly');
+    setScheduleAmount(String(family.recurringDonationAmount || 0));
+    setScheduleDay(family.recurringPaymentDay || 1);
+    setScheduleMonth(family.recurringPaymentMonth || 1);
+    setIsScheduleModalOpen(true);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="page-header">
         <div>
@@ -170,9 +217,10 @@ export default function RecurringDonationsPage() {
             onChange={e => setPaymentStatus(e.target.value)}
             className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
           >
-            <option value="all">{t('recurring_donations_page.allStatuses')}</option>
-            <option value="unpaid">{t('recurring_donations_page.unpaidReport')}</option>
-            <option value="paid">{t('recurring_donations_page.paidReport')}</option>
+            <option value="all">All Payment Statuses</option>
+            <option value="unpaid">Unpaid Dues</option>
+            <option value="overdue">Overdue Payments</option>
+            <option value="paid">Paid & Settled</option>
           </select>
         </div>
       </div>
@@ -190,8 +238,8 @@ export default function RecurringDonationsPage() {
                 <tr>
                   <th className="pl-6">{t('recurring_donations_page.familyCode')}</th>
                   <th>{t('recurring_donations_page.familyHead')}</th>
-                  <th>{t('recurring_donations_page.contact')}</th>
-                  <th>{t('recurring_donations_page.frequency')}</th>
+                  <th>Payment Schedule</th>
+                  <th>Next Due Date</th>
                   <th>{t('recurring_donations_page.configuredAmount')}</th>
                   <th>{t('recurring_donations_page.outstandingBalance')}</th>
                   <th className="pr-6">{t('recurring_donations_page.actions')}</th>
@@ -206,79 +254,219 @@ export default function RecurringDonationsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredFamilies.map((family: any, i: number) => (
-                    <motion.tr
-                      key={family._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.02 }}
-                      className="group"
-                    >
-                      <td className="pl-6">
-                        <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold">{family.familyCode}</code>
-                      </td>
-                      <td>
-                        <span className="font-medium text-foreground">
-                          {family.headMemberId?.name || 'Unknown Head'}
-                        </span>
-                      </td>
-                      <td className="text-muted-foreground text-sm">
-                        {family.headMemberId?.phone || '—'}
-                      </td>
-                      <td>
-                        <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold capitalize',
-                          family.recurringDonationType === 'monthly'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                            : 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
-                        )}>
-                          {family.recurringDonationType === 'monthly' ? t('families.edit.monthly') : t('families.edit.yearly')}
-                        </span>
-                      </td>
-                      <td className="text-sm font-semibold text-foreground">
-                        {formatCurrency(family.recurringDonationAmount || 0)}
-                      </td>
-                      <td>
-                        <span className={cn('text-sm font-bold',
-                          (family.outstandingBalance || 0) > 0 ? 'text-red-500' : 'text-emerald-600'
-                        )}>
-                          {formatCurrency(family.outstandingBalance || 0)}
-                         </span>
-                      </td>
-                      <td className="pr-6">
-                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {(family.outstandingBalance || 0) > 0 && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedFamily(family);
-                                  setPaymentAmount(String(family.outstandingBalance || 0));
-                                  setIsPaymentModalOpen(true);
-                                }}
-                                className="flex items-center gap-1 text-xs text-emerald-600 hover:underline font-bold"
-                              >
-                                <DollarSign size={13} />
-                                Collect
-                              </button>
-                              <button
-                                onClick={() => triggerAlert(family._id, family.headMemberId?.name || family.familyCode, family.outstandingBalance || 0)}
-                                disabled={remindMutation.isPending && remindMutation.variables === family._id}
-                                className="flex items-center gap-1 text-xs text-amber-600 hover:underline font-bold disabled:opacity-50"
-                              >
-                                {remindMutation.isPending && remindMutation.variables === family._id ? <Loader2 size={13} className="animate-spin" /> : <Bell size={13} />}
-                                {t('recurring_donations_page.sendAlert')}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))
+                  filteredFamilies.map((family: any, i: number) => {
+                    const dueInfo = getDueStatus(family.nextPaymentDueDate);
+                    const isMonthly = family.recurringDonationType === 'monthly';
+                    const scheduleText = isMonthly 
+                      ? `${family.recurringPaymentDay || 1}${getOrdinal(family.recurringPaymentDay || 1)} of every month`
+                      : `${family.recurringPaymentDay || 1} ${MONTH_NAMES[(family.recurringPaymentMonth || 1) - 1]} (Yearly)`;
+
+                    return (
+                      <motion.tr
+                        key={family._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="group"
+                      >
+                        <td className="pl-6">
+                          <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold">{family.familyCode}</code>
+                        </td>
+                        <td>
+                          <div>
+                            <span className="font-semibold text-foreground block">
+                              {family.headMemberId?.name || 'Unknown Head'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {family.headMemberId?.phone || '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="space-y-0.5">
+                            <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold capitalize inline-block',
+                              isMonthly
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                : 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+                            )}>
+                              {family.recurringDonationType}
+                            </span>
+                            <p className="text-xs font-medium text-muted-foreground">{scheduleText}</p>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-foreground">
+                              {family.nextPaymentDueDate ? formatDate(family.nextPaymentDueDate) : 'N/A'}
+                            </p>
+                            <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-bold inline-block', dueInfo.badge)}>
+                              {dueInfo.label}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-sm font-semibold text-foreground">
+                          {formatCurrency(family.recurringDonationAmount || 0)}
+                        </td>
+                        <td>
+                          <span className={cn('text-sm font-bold',
+                            (family.outstandingBalance || 0) > 0 ? 'text-red-500' : 'text-emerald-600'
+                          )}>
+                            {formatCurrency(family.outstandingBalance || 0)}
+                          </span>
+                        </td>
+                        <td className="pr-6">
+                          <div className="flex items-center gap-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => openScheduleModal(family)}
+                              title="Configure Due Schedule"
+                              className="p-1.5 rounded-lg border border-border hover:bg-muted text-foreground transition-colors"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            {(family.outstandingBalance || 0) > 0 && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedFamily(family);
+                                    setPaymentAmount(String(family.outstandingBalance || family.recurringDonationAmount || 0));
+                                    setIsPaymentModalOpen(true);
+                                  }}
+                                  className="flex items-center gap-1 text-xs text-emerald-600 hover:underline font-bold"
+                                >
+                                  <DollarSign size={13} />
+                                  Collect
+                                </button>
+                                <button
+                                  onClick={() => triggerAlert(family._id, family.headMemberId?.name || family.familyCode, family.outstandingBalance || 0)}
+                                  disabled={remindMutation.isPending && remindMutation.variables === family._id}
+                                  className="flex items-center gap-1 text-xs text-amber-600 hover:underline font-bold disabled:opacity-50"
+                                >
+                                  {remindMutation.isPending && remindMutation.variables === family._id ? <Loader2 size={13} className="animate-spin" /> : <Bell size={13} />}
+                                  Remind
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Configure Due Schedule Modal */}
+      <AnimatePresence>
+        {isScheduleModalOpen && editScheduleFamily && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card w-full max-w-md rounded-2xl shadow-xl border overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-4 border-b flex items-center justify-between bg-card">
+                <h2 className="font-bold text-lg">Configure Recurring Schedule</h2>
+                <button onClick={() => { setIsScheduleModalOpen(false); setEditScheduleFamily(null); }} className="p-2 hover:bg-muted rounded-full">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Family</label>
+                  <p className="text-sm font-bold bg-muted p-2.5 rounded-xl text-foreground">
+                    {editScheduleFamily.familyCode} ({editScheduleFamily.headMemberId?.name || 'Head'})
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Donation Frequency *</label>
+                  <select
+                    value={scheduleType}
+                    onChange={(e: any) => setScheduleType(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border bg-background text-sm font-medium"
+                  >
+                    <option value="monthly">Monthly Subscription</option>
+                    <option value="yearly">Yearly Contribution</option>
+                    <option value="none">No Recurring Donation</option>
+                  </select>
+                </div>
+
+                {scheduleType !== 'none' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Configured Amount (INR) *</label>
+                      <input
+                        type="number"
+                        value={scheduleAmount}
+                        onChange={e => setScheduleAmount(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border bg-background text-sm font-semibold"
+                        placeholder="e.g. 500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">
+                        {scheduleType === 'monthly' ? 'Day of the Month (1 to 31) *' : 'Day of the Month *'}
+                      </label>
+                      <select
+                        value={scheduleDay}
+                        onChange={e => setScheduleDay(Number(e.target.value))}
+                        className="w-full p-2.5 rounded-xl border bg-background text-sm font-medium"
+                      >
+                        {Array.from({ length: 31 }, (_, idx) => idx + 1).map(day => (
+                          <option key={day} value={day}>
+                            {day}{getOrdinal(day)} of the month
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {scheduleType === 'yearly' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Payment Month of Year *</label>
+                        <select
+                          value={scheduleMonth}
+                          onChange={e => setScheduleMonth(Number(e.target.value))}
+                          className="w-full p-2.5 rounded-xl border bg-background text-sm font-medium"
+                        >
+                          {MONTH_NAMES.map((mName, idx) => (
+                            <option key={idx + 1} value={idx + 1}>
+                              {mName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="p-4 border-t bg-card flex gap-3">
+                <button onClick={() => { setIsScheduleModalOpen(false); setEditScheduleFamily(null); }} className="flex-1 py-2.5 rounded-xl border font-bold text-sm">
+                  Cancel
+                </button>
+                <button
+                  onClick={() => updateScheduleMutation.mutate({
+                    recurringDonationType: scheduleType,
+                    recurringDonationAmount: Number(scheduleAmount || 0),
+                    recurringPaymentDay: scheduleDay,
+                    recurringPaymentMonth: scheduleMonth,
+                  })}
+                  disabled={updateScheduleMutation.isPending}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex justify-center items-center gap-2"
+                >
+                  {updateScheduleMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Save Schedule'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Collect Payment Modal */}
       <AnimatePresence>
@@ -361,4 +549,10 @@ export default function RecurringDonationsPage() {
       </AnimatePresence>
     </div>
   );
+}
+
+function getOrdinal(n: number) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }
