@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Loader2, Moon, Sun, Star } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -177,7 +178,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-white/10">
+          <div className="mt-6 pt-5 border-t border-white/10 space-y-3">
+            <Link
+              href="/madrasa-login"
+              className="w-full py-2.5 px-4 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/20 text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+            >
+              <span>🏫 Go to Madrasa Staff Portal (Sadar Mualim / Ustadh)</span>
+            </Link>
             <p className="text-center text-white/40 text-xs">
               Mahallu ERP v1.0 · Secure Login
             </p>
